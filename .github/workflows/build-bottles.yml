@@ -37,7 +37,7 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          TAG_ENCODED=$(echo "$TAG" | jq -sRr @uri)
+          TAG_ENCODED=$(printf '%s' "$TAG" | jq -sRr @uri)
           echo "tag_encoded=$TAG_ENCODED" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
           echo "Tag: $TAG"
