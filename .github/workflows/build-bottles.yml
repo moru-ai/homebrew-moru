@@ -1,0 +1,201 @@
+name: Build Bottles
+
+on:
+  repository_dispatch:
+    types: [cli-release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 0.3.3)'
+        required: true
+        type: string
+      tag:
+        description: 'GitHub release tag (e.g., @moru-ai/cli@0.3.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-bottles:
+    name: Build Bottles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tap repository
+        uses: actions/checkout@v4
+
+      - name: Set version from input or event
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+            TAG="${{ github.event.client_payload.tag }}"
+          else
+            VERSION="${{ inputs.version }}"
+            TAG="${{ inputs.tag }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          TAG_ENCODED=$(echo "$TAG" | jq -sRr @uri)
+          echo "tag_encoded=$TAG_ENCODED" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+          echo "Tag: $TAG"
+          echo "Tag Encoded: $TAG_ENCODED"
+
+      - name: Download binaries and create bottles
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG_ENCODED: ${{ steps.version.outputs.tag_encoded }}
+        run: |
+          BASE_URL="https://github.com/moru-ai/sdks/releases/download/${TAG_ENCODED}"
+
+          # Platform configurations: binary_suffix:bottle_os_list
+          declare -A PLATFORMS=(
+            ["darwin-arm64"]="arm64_sequoia arm64_sonoma arm64_ventura arm64_monterey"
+            ["darwin-x64"]="sequoia sonoma ventura monterey"
+            ["linux-arm64"]="arm64_linux"
+            ["linux-x64"]="x86_64_linux"
+          )
+
+          mkdir -p bottles
+
+          for PLATFORM in "${!PLATFORMS[@]}"; do
+            echo "=== Processing $PLATFORM ==="
+
+            # Download binary
+            BINARY_URL="${BASE_URL}/moru-v${VERSION}-${PLATFORM}"
+            echo "Downloading from: $BINARY_URL"
+            curl -fsSL "$BINARY_URL" -o moru-binary
+            chmod +x moru-binary
+
+            # Verify binary
+            ./moru-binary --version
+
+            # Create bottles for each OS version
+            for OS_TAG in ${PLATFORMS[$PLATFORM]}; do
+              echo "Creating bottle for $OS_TAG..."
+
+              # Create Cellar structure
+              rm -rf moru
+              mkdir -p moru/${VERSION}/bin
+              cp moru-binary moru/${VERSION}/bin/moru
+
+              # Create bottle
+              BOTTLE_NAME="moru-${VERSION}.${OS_TAG}.bottle.tar.gz"
+              tar -czf "bottles/${BOTTLE_NAME}" moru
+
+              echo "Created: $BOTTLE_NAME"
+            done
+
+            rm moru-binary
+          done
+
+          ls -la bottles/
+
+      - name: Calculate SHA256 checksums
+        id: checksums
+        run: |
+          cd bottles
+
+          # Generate checksums and format for Ruby
+          echo "checksums<<EOF" >> "$GITHUB_OUTPUT"
+          for f in *.bottle.tar.gz; do
+            SHA=$(shasum -a 256 "$f" | awk '{print $1}')
+            # Extract OS tag from filename: moru-0.3.3.arm64_sonoma.bottle.tar.gz -> arm64_sonoma
+            OS_TAG=$(echo "$f" | sed -E 's/moru-[0-9.]+\.(.+)\.bottle\.tar\.gz/\1/')
+            echo "    sha256 cellar: :any_skip_relocation, ${OS_TAG}: \"${SHA}\""
+          done >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release for bottles
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Delete existing release if exists
+          gh release delete "bottles-v${VERSION}" --yes 2>/dev/null || true
+
+          # Create new release
+          gh release create "bottles-v${VERSION}" \
+            --title "Bottles v${VERSION}" \
+            --notes "Homebrew bottles for moru v${VERSION}" \
+            bottles/*.bottle.tar.gz
+
+      - name: Update formula with bottle block
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          TAG_ENCODED: ${{ steps.version.outputs.tag_encoded }}
+          CHECKSUMS: ${{ steps.checksums.outputs.checksums }}
+        run: |
+          # Download SHA256SUMS for source binaries
+          SUMS_URL="https://github.com/moru-ai/sdks/releases/download/${TAG_ENCODED}/SHA256SUMS"
+          curl -fsSL "$SUMS_URL" -o SHA256SUMS
+
+          SHA_DARWIN_ARM64=$(grep "darwin-arm64" SHA256SUMS | awk '{print $1}')
+          SHA_DARWIN_X64=$(grep "darwin-x64" SHA256SUMS | awk '{print $1}')
+          SHA_LINUX_ARM64=$(grep "linux-arm64" SHA256SUMS | awk '{print $1}')
+          SHA_LINUX_X64=$(grep "linux-x64" SHA256SUMS | awk '{print $1}')
+
+          cat > Formula/moru.rb << EOF
+          class Moru < Formula
+            desc "CLI for managing Moru sandbox templates"
+            homepage "https://github.com/moru-ai/sdks"
+            license "Apache-2.0"
+            version "${VERSION}"
+
+            bottle do
+              root_url "https://github.com/moru-ai/homebrew-moru/releases/download/bottles-v${VERSION}"
+          ${CHECKSUMS}
+            end
+
+            if OS.mac?
+              if Hardware::CPU.arm?
+                url "https://github.com/moru-ai/sdks/releases/download/${TAG_ENCODED}/moru-v${VERSION}-darwin-arm64"
+                sha256 "${SHA_DARWIN_ARM64}"
+              else
+                url "https://github.com/moru-ai/sdks/releases/download/${TAG_ENCODED}/moru-v${VERSION}-darwin-x64"
+                sha256 "${SHA_DARWIN_X64}"
+              end
+            elsif OS.linux?
+              if Hardware::CPU.arm?
+                url "https://github.com/moru-ai/sdks/releases/download/${TAG_ENCODED}/moru-v${VERSION}-linux-arm64"
+                sha256 "${SHA_LINUX_ARM64}"
+              else
+                url "https://github.com/moru-ai/sdks/releases/download/${TAG_ENCODED}/moru-v${VERSION}-linux-x64"
+                sha256 "${SHA_LINUX_X64}"
+              end
+            end
+
+            def install
+              if OS.mac?
+                if Hardware::CPU.arm?
+                  bin.install "moru-v#{version}-darwin-arm64" => "moru"
+                else
+                  bin.install "moru-v#{version}-darwin-x64" => "moru"
+                end
+              elsif OS.linux?
+                if Hardware::CPU.arm?
+                  bin.install "moru-v#{version}-linux-arm64" => "moru"
+                else
+                  bin.install "moru-v#{version}-linux-x64" => "moru"
+                end
+              end
+            end
+
+            test do
+              system "#{bin}/moru", "--version"
+            end
+          end
+          EOF
+
+          cat Formula/moru.rb
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/moru.rb
+          git commit -m "Update moru formula to v${{ steps.version.outputs.version }} with bottles"
+          git push
