@@ -69,8 +69,8 @@ jobs:
             curl -fsSL "$BINARY_URL" -o moru-binary
             chmod +x moru-binary
 
-            # Verify binary
-            ./moru-binary --version
+            # Verify binary (just check file type, can't execute cross-platform)
+            file moru-binary
 
             # Create bottles for each OS version
             for OS_TAG in ${PLATFORMS[$PLATFORM]}; do
