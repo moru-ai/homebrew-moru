@@ -2,37 +2,37 @@ class Moru < Formula
   desc "CLI for managing Moru sandbox templates"
   homepage "https://github.com/moru-ai/sdks"
   license "Apache-2.0"
-  version "0.3.4"
+  version "0.3.5"
 
   bottle do
-    root_url "https://github.com/moru-ai/homebrew-moru/releases/download/bottles-v0.3.4"
-    sha256 cellar: :any_skip_relocation, arm64_linux: "371fe1f46661d60fc558783087778b96a072f7464d7344219e89d9ad6eb21431"
-    sha256 cellar: :any_skip_relocation, arm64_monterey: "f0e287e686d457da33788630bccdc5d82ca0db532ee46a7088f3d18aaa4a305d"
-    sha256 cellar: :any_skip_relocation, arm64_sequoia: "76a0e1098902632476abfb15b92519d0bc3e08572986181dfa3f93b81414aeba"
-    sha256 cellar: :any_skip_relocation, arm64_sonoma: "30cc29d4cb8289317d6c6b09bbc25bc442729d51ce41373caf98895e4d530581"
-    sha256 cellar: :any_skip_relocation, arm64_ventura: "71fe1c05017ebbe2aa4fd8cf8d3051c29b0202119b8945e0cf2c5f78ff7161e7"
-    sha256 cellar: :any_skip_relocation, monterey: "2d06fccce643a40f9e4a046f2e74bf5d5836faf76ba050f91a0c281929cfd500"
-    sha256 cellar: :any_skip_relocation, sequoia: "40cd705c45a0e0ee5323518c0058a35f8cb2fc47c24a0ffc4a7753397a966979"
-    sha256 cellar: :any_skip_relocation, sonoma: "ab18469a1347605e7f7bff3b0933896dc85cebf160ccabcb9ff7f6e44e917222"
-    sha256 cellar: :any_skip_relocation, ventura: "676145ae3d12cef03c75b45af73a8a7d2db6712c3ba0fa25e018c51a34b87268"
-    sha256 cellar: :any_skip_relocation, x86_64_linux: "44ad13c47653487d1eeb16178949ae597cf290308701c087998151faf822e7f0"
+    root_url "https://github.com/moru-ai/homebrew-moru/releases/download/bottles-v0.3.5"
+    sha256 cellar: :any_skip_relocation, arm64_linux: "d7902c6f1e0d3eb3f6e450826aeebb13d8a7778ba6b887dfd9f0c2169e72a453"
+    sha256 cellar: :any_skip_relocation, arm64_monterey: "cc45d8658b0b6810f1931f0681f498955a5289b447a38630ae64e31844840ff6"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "30fdfbc9e6d165c8f4b61f9988d96773e69772b0cbb687335f11d53e57818a53"
+    sha256 cellar: :any_skip_relocation, arm64_sonoma: "4512de4e87b860c359af41b90f3c3620f8188c3fa860cd7702c6c562efed4430"
+    sha256 cellar: :any_skip_relocation, arm64_ventura: "893b8e1a3f3f7c601f15422e690fa8e5751d0aa839029a1493be27df51ee35e9"
+    sha256 cellar: :any_skip_relocation, monterey: "c733a842b53afde7b5dcdf269bd3a408b95aa8b3bcd5e3fb1579c1049a4f5294"
+    sha256 cellar: :any_skip_relocation, sequoia: "afe9af4d7326574f6f1aecaefdf74415937f675bd7c9bb754ad66e8b2723ba72"
+    sha256 cellar: :any_skip_relocation, sonoma: "58c82d7e2f5280e4be78e0fb384bb56205bf01ec2808d41ef452d65b0ef3fbf4"
+    sha256 cellar: :any_skip_relocation, ventura: "419490c5018de8ceb73dc56f74606a61ad5619cde47d468ddd72b62977e71d0f"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "a153679fee3e157ddfcfb601d2e568002121c47575db676f79c2e82da36a37d0"
   end
 
   if OS.mac?
     if Hardware::CPU.arm?
-      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.4/moru-v0.3.4-darwin-arm64"
-      sha256 "ebb0657df08ac7dfbff55db37e90b0436cb743f96b760b5a736951806c49db4f"
+      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.5/moru-v0.3.5-darwin-arm64"
+      sha256 "171a185b912378432e32f6b245971101e95a2608226b7ab96a4338befc87a24a"
     else
-      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.4/moru-v0.3.4-darwin-x64"
-      sha256 "b28b519fa84fbbc4e49877a9e1bf91ddfa24e44605d8a3754058a21926da4894"
+      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.5/moru-v0.3.5-darwin-x64"
+      sha256 "cb7b614a4f422718a0ad6cf4ebceb31d30816742ee1665626766d9baeb702863"
     end
   elsif OS.linux?
     if Hardware::CPU.arm?
-      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.4/moru-v0.3.4-linux-arm64"
-      sha256 "7adbb92b31406584e1ecd8c8880d4eafe15a1d42d264d5e4c5779ba4c9a6c2c5"
+      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.5/moru-v0.3.5-linux-arm64"
+      sha256 "baed1f812a13b1c67176bedca47b433d8a4b9e8dbc1f98edba72fa2a4a53c4c9"
     else
-      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.4/moru-v0.3.4-linux-x64"
-      sha256 "6db377a778775e23fae2088cf9035cef015d4e3098a8ae3d697d00dfe88f0ea2"
+      url "https://github.com/moru-ai/sdks/releases/download/%40moru-ai%2Fcli%400.3.5/moru-v0.3.5-linux-x64"
+      sha256 "ee4942bf48d670418a29c0405d40425f486db863d639b476a259837600648978"
     end
   end
 
